@@ -138,68 +138,84 @@ public class ${upperDataKey}Controller {
         return ResultUtils.success(${dataKey}Service.get${upperDataKey}VO(${dataKey}, request));
     }
 
-    /**
+     /**
+     * 通用的分页查询处理逻辑
+     *
+     * @param ${dataKey}QueryRequest 查询请求对象
+     * @param request Http请求对象
+     * @param isAdmin 是否为管理员
+     * @param setUserId 是否设置用户ID
+     * @param mapper 结果转换函数
+     * @return 分页查询结果
+     */
+     private <T> BaseResponse<Page<T>> handle${upperDataKey}Query(${upperDataKey}QueryRequest ${dataKey}QueryRequest,
+                        HttpServletRequest request,
+                        boolean isAdmin,
+                        boolean setUserId,
+                        Function<Page<${upperDataKey}>, Page<T>> mapper) {
+        if (${dataKey}QueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long current = ${dataKey}QueryRequest.getCurrent();
+        long size = ${dataKey}QueryRequest.getPageSize();
+
+        // 限制爬虫
+        if (!isAdmin) {
+            ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+        }
+
+        // 如果需要设置用户ID
+        if (setUserId) {
+            User loginUser = userService.getLoginUser(request);
+            ${dataKey}QueryRequest.setUserId(loginUser.getId());
+        }
+
+        // 查询数据库
+        Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
+                            ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
+        return ResultUtils.success(mapper.apply(${dataKey}Page));
+     }
+
+     /**
      * 分页获取${dataName}列表（仅管理员可用）
      *
-     * @param ${dataKey}QueryRequest
-     * @return
+     * @param ${dataKey}QueryRequest 查询请求对象
+     * @return 分页查询结果
      */
-    @PostMapping("/list/page")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<Page<${upperDataKey}>> list${upperDataKey}ByPage(@RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest) {
-        long current = ${dataKey}QueryRequest.getCurrent();
-        long size = ${dataKey}QueryRequest.getPageSize();
-        // 查询数据库
-        Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
-                ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
-        return ResultUtils.success(${dataKey}Page);
-    }
+     @PostMapping("/list/page")
+     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+     public BaseResponse<Page<${upperDataKey}>> list${upperDataKey}ByPage(
+                            @RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest) {
+        return handle${upperDataKey}Query(${dataKey}QueryRequest, null, true, false, page -> page);
+     }
 
-    /**
+     /**
      * 分页获取${dataName}列表（封装类）
      *
-     * @param ${dataKey}QueryRequest
-     * @param request
-     * @return
+     * @param ${dataKey}QueryRequest 查询请求对象
+     * @param request Http请求对象
+     * @return 分页查询结果
      */
-    @PostMapping("/list/page/vo")
-    public BaseResponse<Page<${upperDataKey}VO>> list${upperDataKey}VOByPage(@RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest,
-                                                               HttpServletRequest request) {
-        long current = ${dataKey}QueryRequest.getCurrent();
-        long size = ${dataKey}QueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
-                ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
-        // 获取封装类
-        return ResultUtils.success(${dataKey}Service.get${upperDataKey}VOPage(${dataKey}Page, request));
-    }
+     @PostMapping("/list/page/vo")
+     public BaseResponse<Page<${upperDataKey}VO>> list${upperDataKey}VOByPage(
+                                @RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest, HttpServletRequest request) {
+        return handle${upperDataKey}Query(${dataKey}QueryRequest, request, false, false,
+                                page -> ${dataKey}Service.get${upperDataKey}VOPage(page, request));
+     }
 
-    /**
+     /**
      * 分页获取当前登录用户创建的${dataName}列表
      *
      * @param ${dataKey}QueryRequest
      * @param request
      * @return
      */
-    @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<${upperDataKey}VO>> listMy${upperDataKey}VOByPage(@RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest,
-                                                                 HttpServletRequest request) {
-        ThrowUtils.throwIf(${dataKey}QueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 补充查询条件，只查询当前登录用户的数据
-        User loginUser = userService.getLoginUser(request);
-        ${dataKey}QueryRequest.setUserId(loginUser.getId());
-        long current = ${dataKey}QueryRequest.getCurrent();
-        long size = ${dataKey}QueryRequest.getPageSize();
-        // 限制爬虫
-        ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
-                ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
-        // 获取封装类
-        return ResultUtils.success(${dataKey}Service.get${upperDataKey}VOPage(${dataKey}Page, request));
-    }
+     @PostMapping("/my/list/page/vo")
+     public BaseResponse<Page<${upperDataKey}VO>> listMy${upperDataKey}VOByPage(
+                                    @RequestBody ${upperDataKey}QueryRequest ${dataKey}QueryRequest, HttpServletRequest request) {
+     return handle${upperDataKey}Query(${dataKey}QueryRequest, request, false, true,
+                                    page -> ${dataKey}Service.get${upperDataKey}VOPage(page, request));
+     }
 
     /**
      * 编辑${dataName}（给用户使用）
