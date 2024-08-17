@@ -40,6 +40,45 @@ public class ${upperDataKey}Controller {
     @Resource
     private UserService userService;
 
+
+    /**
+    * 通用的分页查询处理逻辑
+    *
+    * @param ${dataKey}QueryRequest 查询请求对象
+    * @param request Http请求对象
+    * @param isAdmin 是否为管理员
+    * @param setUserId 是否设置用户ID
+    * @param mapper 结果转换函数
+    * @return 分页查询结果
+    */
+    private <T> BaseResponse<Page<T>> handle${upperDataKey}Query(${upperDataKey}QueryRequest ${dataKey}QueryRequest,
+            HttpServletRequest request,
+            boolean isAdmin,
+            boolean setUserId,
+            Function<Page<${upperDataKey}>, Page<T>> mapper) {
+        if (${dataKey}QueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long current = ${dataKey}QueryRequest.getCurrent();
+        long size = ${dataKey}QueryRequest.getPageSize();
+
+        // 限制爬虫
+       if (!isAdmin) {
+            ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
+       }
+
+       // 如果需要设置用户ID
+       if (setUserId) {
+            User loginUser = userService.getLoginUser(request);
+            ${dataKey}QueryRequest.setUserId(loginUser.getId());
+       }
+
+       // 查询数据库
+       Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
+            ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
+       return ResultUtils.success(mapper.apply(${dataKey}Page));
+       }
+
     // region 增删改查
 
     /**
@@ -138,43 +177,7 @@ public class ${upperDataKey}Controller {
         return ResultUtils.success(${dataKey}Service.get${upperDataKey}VO(${dataKey}, request));
     }
 
-     /**
-     * 通用的分页查询处理逻辑
-     *
-     * @param ${dataKey}QueryRequest 查询请求对象
-     * @param request Http请求对象
-     * @param isAdmin 是否为管理员
-     * @param setUserId 是否设置用户ID
-     * @param mapper 结果转换函数
-     * @return 分页查询结果
-     */
-     private <T> BaseResponse<Page<T>> handle${upperDataKey}Query(${upperDataKey}QueryRequest ${dataKey}QueryRequest,
-                        HttpServletRequest request,
-                        boolean isAdmin,
-                        boolean setUserId,
-                        Function<Page<${upperDataKey}>, Page<T>> mapper) {
-        if (${dataKey}QueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        long current = ${dataKey}QueryRequest.getCurrent();
-        long size = ${dataKey}QueryRequest.getPageSize();
 
-        // 限制爬虫
-        if (!isAdmin) {
-            ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        }
-
-        // 如果需要设置用户ID
-        if (setUserId) {
-            User loginUser = userService.getLoginUser(request);
-            ${dataKey}QueryRequest.setUserId(loginUser.getId());
-        }
-
-        // 查询数据库
-        Page<${upperDataKey}> ${dataKey}Page = ${dataKey}Service.page(new Page<>(current, size),
-                            ${dataKey}Service.getQueryWrapper(${dataKey}QueryRequest));
-        return ResultUtils.success(mapper.apply(${dataKey}Page));
-     }
 
      /**
      * 分页获取${dataName}列表（仅管理员可用）
